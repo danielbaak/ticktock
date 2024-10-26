@@ -34,8 +34,8 @@ ARG BUILD_DATE
 ARG GIT_COMMIT
 ARG VERSION
 ARG DEBIAN_FRONTEND=noninteractive
-ARG UID=1000
-ARG GID=1000
+ARG UID=1001
+ARG GID=1001
 
 LABEL name="TickTock" version="$VERSION"
 LABEL build-date="$BUILD_DATE" git-commit="$GIT_COMMIT"
@@ -51,16 +51,18 @@ RUN apt-get update && apt-get install -y \
   curl \
   nano
 
-RUN addgroup --quiet --gid ${GID} ticktock && \
-  adduser --quiet --uid ${UID} --disabled-login --disabled-password --no-create-home --gecos "" --ingroup ticktock ticktock
+RUN groupadd -g ${GID} ticktock && useradd -u ${UID} -g ticktock -d /nonexistent ticktock
 
 RUN mkdir -p /var/lib/ticktock && \
   chown ticktock:ticktock /var/lib/ticktock
-RUN mkdir -p /opt/ticktock && \
-  chown ticktock:ticktock /opt/ticktock
+RUN mkdir -p /opt/ticktock/{bin,conf,scripts} && \
+  chown -R ticktock:ticktock /opt/ticktock
 
-COPY limits.conf /etc/security/
-COPY --chown=ticktock:ticktock opt/ /opt/
+COPY docker/limits.conf /etc/security/
+COPY --chown=ticktock:ticktock bin/tt /opt/ticktock/bin/ticktock
+COPY --chown=ticktock:ticktock conf/tt.conf /opt/ticktock/conf/ticktock.conf
+COPY --chown=ticktock:ticktock scripts /opt/ticktock/scripts
+COPY --chown=ticktock:ticktock docker/entrypoint.sh /opt/ticktock/scripts/entrypoint.sh
 
 EXPOSE 6180/tcp
 EXPOSE 6181/tcp
